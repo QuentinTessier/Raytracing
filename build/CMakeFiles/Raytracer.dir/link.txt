@@ -1,0 +1,1 @@
+/usr/bin/cc    CMakeFiles/Raytracer.dir/src/main.c.o  -o Raytracer 
