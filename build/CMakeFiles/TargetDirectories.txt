@@ -1,3 +1,0 @@
-/home/quentinepitech/Documents/Raytracing/build/CMakeFiles/rebuild_cache.dir
-/home/quentinepitech/Documents/Raytracing/build/CMakeFiles/Raytracer.dir
-/home/quentinepitech/Documents/Raytracing/build/CMakeFiles/edit_cache.dir
