@@ -16,6 +16,14 @@ public:
     inline float r() const { return e[0]; }
     inline float g() const { return e[1]; }
     inline float b() const { return e[2]; }
+    inline vec3 xyz() const { return vec3(e[0], e[1], e[2]); }
+    inline vec3 xzy() const { return vec3(e[0], e[2], e[1]); }
+
+    inline vec3 yxz() const { return vec3(e[1], e[0], e[2]); }
+    inline vec3 yzx() const { return vec3(e[1], e[2], e[0]); }
+
+    inline vec3 zxy() const { return vec3(e[2], e[0], e[1]); }
+    inline vec3 zyx() const { return vec3(e[2], e[1], e[0]); }
 
     inline const vec3& operator+() const { return *this; }
     inline vec3 operator-() const { return vec3(-e[0], -e[1], -e[2]); }
@@ -139,4 +147,34 @@ inline vec3& vec3::operator/=(const float t) {
 
 inline vec3 unit_vector(vec3 v) {
     return v / v.length();
+}
+
+inline vec3 abs(vec3 const& v)
+{
+    return vec3(std::fabs(v[0]), std::fabs(v[1]), std::fabs(v[2]));
+}
+
+inline float sign(float x)
+{
+    return (x < 0.f) ? -1.0f : (x > 0.f) ? 1.0f : 0.0f;
+}
+
+inline vec3 sign(vec3 const& x)
+{
+    return vec3(sign(x[0]), sign(x[1]), sign(x[2]));
+}
+
+inline float step(float edge, float x)
+{
+    return (x < edge) ? 0.0f : 1.0f;
+}
+
+inline vec3 step(vec3 edge, vec3 x)
+{
+    return vec3(step(edge[0], x[0]), step(edge[1], x[1]), step(edge[2], x[2]));
+}
+
+inline vec3 rcp(const vec3 &v1)
+{
+    return vec3(1.f / v1.x(), 1.f / v1.y(), 1.f / v1.z());
 }
