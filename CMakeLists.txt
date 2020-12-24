@@ -6,3 +6,6 @@ add_executable(Raytracer
 )
 
 target_include_directories(Raytracer PRIVATE ./include)
+
+target_include_directories(Raytracer PRIVATE extern/glm)
+target_include_directories(Raytracer PRIVATE extern/stb)
