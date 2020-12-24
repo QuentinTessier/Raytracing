@@ -5,9 +5,6 @@
 ** main
 */
 
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include <stb_image_write.h>
-
 #include <limits>
 #include <iostream>
 #include <fstream>
@@ -19,6 +16,7 @@
 #include "Raytracer/Camera.hpp"
 #include "Raytracer/Material.hpp"
 #include "Raytracer/Random.hpp"
+#include "Image/Image.hpp"
 
 static const char *soptions = "o:w:h:s:";
 
@@ -107,28 +105,27 @@ int main(int ac, char **av)
     std::string name("../raytraced.png");
     if (!process_params(ac, av, name, nx, ny, ns))
         return 1;
-    uint8_t *pixels = new uint8_t[nx * ny * CHANNELS];
+    Image img(nx, ny);
     HitList *hlist = new HitList();
     hlist->emplace_back(new sphere(glm::vec3(0,-100.5,-1), 100, new lambertian(glm::vec3(0.8, 0.8, 0.0))));
     hlist->emplace_back(new Box(glm::vec3(1, 0, 0), 0.5, new metal(glm::vec3(0.8, 0.6, 0.2), 0.0)));
     hlist->emplace_back(new Box(glm::vec3(-1, 0, 0), 0.5, new lambertian(glm::vec3(0.1, 0.2, 0.5))));
     camera cam(glm::vec3(3, 3, 3), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0), 90, float(nx) / float(ny));
 
-    size_t offset = 0;
-    for (int j = ny - 1; j >= 0; j--) {
+    for (int j = 0; j < ny; ++j) {
         for (int i = 0; i < nx; i++) {
             glm::vec3 col(0.f, 0.f, 0.f);
-            for (int s=0; s < ns; s++) {
+            for (int s = 0; s < ns; s++) {
                 float u = float(i + randf()) / float(nx);
                 float v = float(j + randf()) / float(ny);
                 ray r = cam.get_ray(u, v);
                 col += color(r, hlist, 0);
             }
-            vec3_to_Color(col, ns, pixels + offset, pixels + offset + 1, pixels + offset + 2);
-            offset += 3;
+            col /= float(ns);
+            col = glm::sqrt(col);
+            img.setPixel(i, j, col);
         }
     }
-    stbi_write_png(name.c_str(), nx, ny, CHANNELS, pixels, nx * CHANNELS);
-    delete pixels;
+    img.SaveAs(name);
     return (0);
 }
