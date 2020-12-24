@@ -108,11 +108,10 @@ int main(int ac, char **av)
     if (!process_params(ac, av, name, nx, ny, ns))
         return 1;
     uint8_t *pixels = new uint8_t[nx * ny * CHANNELS];
-    hitable *list[3];
-    list[0] = new sphere(glm::vec3(0,-100.5,-1), 100, new lambertian(glm::vec3(0.8, 0.8, 0.0)));
-    list[1] = new Box(glm::vec3(1, 0, 0), 0.5, new metal(glm::vec3(0.8, 0.6, 0.2), 0.0));
-    list[2] = new Box(glm::vec3(-1, 0, 0), 0.5, new lambertian(glm::vec3(0.1, 0.2, 0.5)));
-    hitable *world = new hitable_list(list, 3);
+    HitList *hlist = new HitList();
+    hlist->emplace_back(new sphere(glm::vec3(0,-100.5,-1), 100, new lambertian(glm::vec3(0.8, 0.8, 0.0))));
+    hlist->emplace_back(new Box(glm::vec3(1, 0, 0), 0.5, new metal(glm::vec3(0.8, 0.6, 0.2), 0.0)));
+    hlist->emplace_back(new Box(glm::vec3(-1, 0, 0), 0.5, new lambertian(glm::vec3(0.1, 0.2, 0.5))));
     camera cam(glm::vec3(3, 3, 3), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0), 90, float(nx) / float(ny));
 
     size_t offset = 0;
@@ -123,7 +122,7 @@ int main(int ac, char **av)
                 float u = float(i + randf()) / float(nx);
                 float v = float(j + randf()) / float(ny);
                 ray r = cam.get_ray(u, v);
-                col += color(r, world, 0);
+                col += color(r, hlist, 0);
             }
             vec3_to_Color(col, ns, pixels + offset, pixels + offset + 1, pixels + offset + 2);
             offset += 3;
