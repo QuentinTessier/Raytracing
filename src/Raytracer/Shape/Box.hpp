@@ -2,7 +2,7 @@
 
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtx/vec_swizzle.hpp"
-#include "Hit.hpp"
+#include "Raytracer/Hit.hpp"
 
 class Box : public hitable {
 public:

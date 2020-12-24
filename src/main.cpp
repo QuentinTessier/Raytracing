@@ -13,12 +13,12 @@
 #include <fstream>
 #include <cstdlib>
 #include <getopt.h>
-#include "Sphere.hpp"
-#include "Box.hpp"
-#include "HitList.hpp"
-#include "Camera.hpp"
-#include "Material.hpp"
-#include "Random.hpp"
+#include "Raytracer/Shape/Sphere.hpp"
+#include "Raytracer/Shape/Box.hpp"
+#include "Raytracer/HitList.hpp"
+#include "Raytracer/Camera.hpp"
+#include "Raytracer/Material.hpp"
+#include "Raytracer/Random.hpp"
 
 static const char *soptions = "o:w:h:s:";
 

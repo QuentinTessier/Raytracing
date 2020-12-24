@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Hit.hpp"
+#include "Raytracer/Hit.hpp"
 
 class sphere : public hitable {
 	public:

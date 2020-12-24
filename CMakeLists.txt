@@ -5,7 +5,6 @@ add_executable(Raytracer
     src/main.cpp
 )
 
-target_include_directories(Raytracer PRIVATE ./include)
-
+target_include_directories(Raytracer PRIVATE ./src)
 target_include_directories(Raytracer PRIVATE extern/glm)
 target_include_directories(Raytracer PRIVATE extern/stb)
