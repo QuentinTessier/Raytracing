@@ -1,12 +1,13 @@
 #pragma once
 
+#include <cassert>
 #include "Random.hpp"
 #include "Ray.hpp"
 #include "Hit.hpp"
 
 class material {
 	public:
-		virtual bool scatter(const ray& r_in, const hit_record& rec, glm::vec3& attenuation, ray& scattered) const = 0;
+		virtual bool scatter(const ray& r_in, const DODHitRecord& rec, glm::vec3& attenuation, ray& scattered) const = 0;
 };
 
 float distance2(glm::vec3 const& v1)
@@ -46,22 +47,70 @@ bool refract(const glm::vec3& v, const glm::vec3& n, float ni_over_nt, glm::vec3
         return false;
 }
 
-class lambertian : public material {
-    public:
-        lambertian(const glm::vec3& a) : albedo(a) {}
-        virtual bool scatter(const ray& r_in, const hit_record& rec, glm::vec3& attenuation, ray& scattered) const {
-            glm::vec3 target = rec.p + rec.normal + random_in_unit_sphere();
-            scattered = ray(rec.p, target - rec.p);
-            attenuation = albedo;
-            return (true);
-        }
-    glm::vec3 albedo;
-};
+static bool DODMaterial_Metal_scatter(const ray& r_in, const DODHitRecord& rec, glm::vec3& attenuation, ray& scattered)
+{
+    glm::vec3 reflected = reflect(glm::normalize(r_in.direction()), rec.normal);
+    scattered = ray(rec.p, reflected + rec.mat.fuzz * random_in_unit_sphere());
+    attenuation = rec.mat.albedo;
+    return (glm::dot(scattered.direction(), rec.normal) > 0);
+}
+
+static bool DODMaterial_Dieletric_scatter(const ray& r_in, const DODHitRecord& rec, glm::vec3& attenuation, ray& scattered)
+{
+    float ref_idx = rec.mat.refraction_index;
+    glm::vec3 outward_normal;
+    glm::vec3 reflected = reflect(r_in.direction(), rec.normal);
+    float ni_over_nt;
+    attenuation = glm::vec3(1.0, 1.0, 1.0);
+    glm::vec3 refracted;
+    float reflect_prob, cosine;
+    if (dot(r_in.direction(), rec.normal) > 0) {
+        outward_normal = -rec.normal;
+        ni_over_nt = ref_idx;
+        cosine = glm::dot(r_in.direction(), rec.normal) / r_in.direction().length();
+        cosine = sqrt(1 - ref_idx * ref_idx * (1 - cosine * cosine));
+    } else {
+        outward_normal = rec.normal;
+        ni_over_nt = 1.0 / ref_idx;
+        cosine = -glm::dot(r_in.direction(), rec.normal) / r_in.direction().length();
+    }
+    if (refract(r_in.direction(), outward_normal, ni_over_nt, refracted))
+        reflect_prob = schlick(cosine, ref_idx);
+    else
+        reflect_prob = 1.0;
+    if (randf() < reflect_prob)
+        scattered = ray(rec.p, reflected);
+    else
+        scattered = ray(rec.p, refracted);
+    return (true);
+}
+
+static bool DODMaterial_Lambertian_scatter(const ray& r_in, const DODHitRecord& rec, glm::vec3& attenuation, ray& scattered)
+{
+    glm::vec3 target = rec.p + rec.normal + random_in_unit_sphere();
+    scattered = ray(rec.p, target - rec.p);
+    attenuation = rec.mat.albedo;
+    return (true);
+}
+
+bool DODMaterial_scatter(const ray& r_in, const DODHitRecord& rec, glm::vec3& attenuation, ray& scattered)
+{
+    if (rec.mat.type == DM_LAMBERTIAN)
+        return DODMaterial_Lambertian_scatter(r_in, rec, attenuation, scattered);
+    else if (rec.mat.type == DM_METAL) {
+        return DODMaterial_Metal_scatter(r_in, rec, attenuation, scattered);
+    } else if (rec.mat.type == DM_DIELETRIC) {
+        return DODMaterial_Dieletric_scatter(r_in, rec, attenuation, scattered);
+    } else {
+        assert(0 && "Unknown material");
+    }
+    return false;
+}
 
 class metal : public material {
     public:
         metal(const glm::vec3& a, const float f) : albedo(a) { if (f < 1) fuzz = f; else fuzz = 1; }
-        virtual bool scatter(const ray& r_in, const hit_record& rec, glm::vec3& attenuation, ray& scattered) const {
+        virtual bool scatter(const ray& r_in, const DODHitRecord& rec, glm::vec3& attenuation, ray& scattered) const {
             glm::vec3 reflected = reflect(glm::normalize(r_in.direction()), rec.normal);
             scattered = ray(rec.p, reflected + fuzz * random_in_unit_sphere());
             attenuation = albedo;
@@ -74,7 +123,7 @@ class metal : public material {
 class dielectric : public material {
     public:
     dielectric(float ri) : ref_idx(ri) {}
-    virtual bool scatter(const ray& r_in, const hit_record& rec, glm::vec3& attenuation, ray& scattered) const {
+    virtual bool scatter(const ray& r_in, const DODHitRecord& rec, glm::vec3& attenuation, ray& scattered) const {
         glm::vec3 outward_normal;
         glm::vec3 reflected = reflect(r_in.direction(), rec.normal);
         float ni_over_nt;

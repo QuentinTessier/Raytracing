@@ -40,14 +40,33 @@ void print_usage(char const *name)
     );
 }
 
-glm::vec3 color(const ray& r, hitable *world, int depth)
+/*glm::vec3 color(const ray& r, hitable *world, int depth)
 {
-    hit_record rec;
+    DODHitRecord rec;
     if (world->hit(r, 0.001, std::numeric_limits<float>::max(), rec)) {
         ray scattered;
         glm::vec3 attenuation;
         if (depth < 50 && rec.mat_ptr->scatter(r, rec, attenuation, scattered)) {
             return (attenuation * color(scattered, world, depth + 1));
+        } else {
+            return (glm::vec3(0, 0, 0));
+        }
+    } else {
+        glm::vec3 unit_dir = glm::normalize(r.direction());
+        float t = 0.5 * (unit_dir.y + 1.0f);
+        return (1.0f - t) * glm::vec3(1.0, 1.0, 1.0) + t * glm::vec3(0.5, 0.7, 1.0);
+    }
+}*/
+
+glm::vec3 DODcolor(const ray& r, DODHitList *world, int depth)
+{
+    DODHitRecord rec;
+
+    if (world->traverse(r, 0.0001, std::numeric_limits<float>::max(), rec)) {
+        ray scattered;
+        glm::vec3 attenuation;
+        if (depth < 50 && DODMaterial_scatter(r, rec, attenuation, scattered)) {
+            return (attenuation * DODcolor(scattered, world, depth + 1));
         } else {
             return (glm::vec3(0, 0, 0));
         }
@@ -106,10 +125,15 @@ int main(int ac, char **av)
     if (!process_params(ac, av, name, nx, ny, ns))
         return 1;
     Image img(nx, ny);
-    HitList *hlist = new HitList();
+    /*HitList *hlist = new HitList();
     hlist->emplace_back(new sphere(glm::vec3(0,-100.5,-1), 100, new lambertian(glm::vec3(0.8, 0.8, 0.0))));
     hlist->emplace_back(new Box(glm::vec3(1, 0, 0), 0.5, new metal(glm::vec3(0.8, 0.6, 0.2), 0.0)));
-    hlist->emplace_back(new Box(glm::vec3(-1, 0, 0), 0.5, new lambertian(glm::vec3(0.1, 0.2, 0.5))));
+    hlist->emplace_back(new Box(glm::vec3(-1, 0, 0), 0.5, new lambertian(glm::vec3(0.1, 0.2, 0.5))));*/
+    DODHitList *dhlist = new DODHitList();
+    // Didn't care about code simplicity in this first path, this will be hidden behind helper functions later
+    dhlist->SphereList.emplace_back((DODSphere){glm::vec3(0, -100, -1), 100, DODMaterial(DM_LAMBERTIAN, glm::vec3(0.8, 0.8, 0))});
+    dhlist->BoxList.emplace_back((DODBox){glm::vec3(1, 0.1, 0), 2, DODMaterial(DM_LAMBERTIAN, glm::vec3(0.5, 0, 0))});
+    //dhlist->BoxList.emplace_back((DODBox){glm::vec3(-1, 0, 0), 0.5, DODMaterial(DM_LAMBERTIAN, glm::vec3(0.1, 0.2, 0.5))});
     camera cam(glm::vec3(3, 3, 3), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0), 90, float(nx) / float(ny));
 
     for (int j = 0; j < ny; ++j) {
@@ -119,7 +143,7 @@ int main(int ac, char **av)
                 float u = float(i + randf()) / float(nx);
                 float v = float(j + randf()) / float(ny);
                 ray r = cam.get_ray(u, v);
-                col += color(r, hlist, 0);
+                col += DODcolor(r, dhlist, 0);
             }
             col /= float(ns);
             col = glm::sqrt(col);
