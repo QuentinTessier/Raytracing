@@ -65,6 +65,7 @@ glm::vec3 DODcolor(const ray& r, DODHitList *world, int depth)
     if (world->traverse(r, 0.0001, std::numeric_limits<float>::max(), rec)) {
         ray scattered;
         glm::vec3 attenuation;
+        return rec.normal;
         if (depth < 50 && DODMaterial_scatter(r, rec, attenuation, scattered)) {
             return (attenuation * DODcolor(scattered, world, depth + 1));
         } else {
@@ -132,7 +133,7 @@ int main(int ac, char **av)
     DODHitList *dhlist = new DODHitList();
     // Didn't care about code simplicity in this first path, this will be hidden behind helper functions later
     dhlist->SphereList.emplace_back((DODSphere){glm::vec3(0, -100, -1), 100, DODMaterial(DM_LAMBERTIAN, glm::vec3(0.8, 0.8, 0))});
-    dhlist->BoxList.emplace_back((DODBox){glm::vec3(1, 0.1, 0), 2, DODMaterial(DM_LAMBERTIAN, glm::vec3(0.5, 0, 0))});
+    dhlist->BoxList.emplace_back((DODBox){glm::vec3(1, 0, 0), 2, DODMaterial(DM_LAMBERTIAN, glm::vec3(1, 0, 0))});
     //dhlist->BoxList.emplace_back((DODBox){glm::vec3(-1, 0, 0), 0.5, DODMaterial(DM_LAMBERTIAN, glm::vec3(0.1, 0.2, 0.5))});
     camera cam(glm::vec3(3, 3, 3), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0), 90, float(nx) / float(ny));
 
