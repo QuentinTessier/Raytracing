@@ -17,6 +17,7 @@
 #include "Raytracer/Material.hpp"
 #include "Raytracer/Random.hpp"
 #include "Image/Image.hpp"
+#include "VoxelOctree/VoxelOctree.hpp"
 
 static const char *soptions = "o:w:h:s:";
 
@@ -38,24 +39,6 @@ void print_usage(char const *name)
         "\t--samples\t|\t-s\tNumber of samples use by the program to generate the image\n",
         name
     );
-}
-
-glm::vec3 color(const ray& r, hitable *world, int depth)
-{
-    hit_record rec;
-    if (world->hit(r, 0.001, std::numeric_limits<float>::max(), rec)) {
-        ray scattered;
-        glm::vec3 attenuation;
-        if (depth < 50 && rec.mat_ptr->scatter(r, rec, attenuation, scattered)) {
-            return (attenuation * color(scattered, world, depth + 1));
-        } else {
-            return (glm::vec3(0, 0, 0));
-        }
-    } else {
-        glm::vec3 unit_dir = glm::normalize(r.direction());
-        float t = 0.5 * (unit_dir.y + 1.0f);
-        return (1.0f - t) * glm::vec3(1.0, 1.0, 1.0) + t * glm::vec3(0.5, 0.7, 1.0);
-    }
 }
 
 bool process_params(int ac, char **av, std::string& name, int& width, int& height, int& samples)
@@ -85,32 +68,38 @@ bool process_params(int ac, char **av, std::string& name, int& width, int& heigh
     return true;
 }
 
-void vec3_to_Color(glm::vec3 v, int ns, uint8_t *r, uint8_t *g, uint8_t *b)
+glm::vec3 color(const ray& r, VoxelOctree *vo, int depth)
 {
-    v /= float(ns);
-    v = glm::sqrt(v);
-
-    *r = int(255.99f * v.x);
-    *g = int(255.99f * v.y);
-    *b = int(255.99f * v.z);
+    Record rec;
+    if (VoxelOctree_Intersect(vo, r, 0.001, std::numeric_limits<float>::max(), rec)) {
+        return rec.color;
+    } else {
+        glm::vec3 unit_dir = glm::normalize(r.direction());
+        float t = 0.5 * (unit_dir.y + 1.0f);
+        return (1.0f - t) * glm::vec3(1.0, 1.0, 1.0) + t * glm::vec3(0.5, 0.7, 1.0);
+    }
 }
-
-#define CHANNELS 3
 
 int main(int ac, char **av)
 {
-    int nx = 200;
-    int ny = 112;
-    int ns = 100;
+    int nx = 1920;
+    int ny = 1080;
+    int ns = 1;
     std::string name("../raytraced.png");
     if (!process_params(ac, av, name, nx, ny, ns))
         return 1;
     Image img(nx, ny);
-    HitList *hlist = new HitList();
-    hlist->emplace_back(new sphere(glm::vec3(0,-100.5,-1), 100, new lambertian(glm::vec3(0.8, 0.8, 0.0))));
-    hlist->emplace_back(new Box(glm::vec3(1, 0, 0), 0.5, new metal(glm::vec3(0.8, 0.6, 0.2), 0.0)));
-    hlist->emplace_back(new Box(glm::vec3(-1, 0, 0), 0.5, new lambertian(glm::vec3(0.1, 0.2, 0.5))));
-    camera cam(glm::vec3(3, 3, 3), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0), 90, float(nx) / float(ny));
+    camera cam(glm::vec3(10, 10, 10), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0), 90, float(nx) / float(ny));
+
+    VoxelOctree *vo = VoxelOctree_create(glm::vec3(0, 0, 0), 1, 4);
+
+    VoxelInfo vi;
+    vi.x = 0;
+    vi.y = 0;
+    vi.z = 0;
+    vi.color = glm::vec3(1, 0, 0);
+
+    VoxelOctree_insert(vo, vi);
 
     for (int j = 0; j < ny; ++j) {
         for (int i = 0; i < nx; i++) {
@@ -119,7 +108,7 @@ int main(int ac, char **av)
                 float u = float(i + randf()) / float(nx);
                 float v = float(j + randf()) / float(ny);
                 ray r = cam.get_ray(u, v);
-                col += color(r, hlist, 0);
+                col += color(r, vo, 0);
             }
             col /= float(ns);
             col = glm::sqrt(col);
@@ -127,5 +116,6 @@ int main(int ac, char **av)
         }
     }
     img.SaveAs(name);
+    VoxelOctree_destroy(vo);
     return (0);
 }
